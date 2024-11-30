@@ -1,0 +1,1 @@
+[{"model": "banks.type", "pk": 1, "fields": {"type": 1}}, {"model": "banks.type", "pk": 2, "fields": {"type": 2}}, {"model": "banks.type", "pk": 3, "fields": {"type": 3}}]

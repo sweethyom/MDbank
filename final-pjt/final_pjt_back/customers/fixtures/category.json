@@ -1,0 +1,1 @@
+[{"model": "customers.category", "pk": 1, "fields": {"category": "계좌이체"}}, {"model": "customers.category", "pk": 2, "fields": {"category": "금융상품"}}, {"model": "customers.category", "pk": 3, "fields": {"category": "자산관리 유형"}}, {"model": "customers.category", "pk": 4, "fields": {"category": "회원가입 및  로그인"}}, {"model": "customers.category", "pk": 5, "fields": {"category": "기타"}}]
