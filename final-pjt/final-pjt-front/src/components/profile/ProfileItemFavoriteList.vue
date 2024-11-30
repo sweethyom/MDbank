@@ -5,7 +5,7 @@
       <span class="divider">|</span>
       <span class="favorite-name">{{ favorites.recipient_name }}</span>
       <span class="divider">|</span>
-      <span class="favorite-account">{{ favorites.recipient }}</span>
+      <span class="favorite-account">{{ favorites.recipient }}</span>ㅓ
     </div>
     <div class="favorite-actions">
       <button class="action-btn edit-btn" @click="toggleModal">
@@ -286,7 +286,7 @@ const updateFavorite = async () => {
 
 const deleteFavorite = async () => {
   if(confirm('정말 삭제하시겠습니까?')) {
-    await store.deleteFavorite(props.favorites.id)  
+    await store.deleteFavorite(props.favorites.id)
     emit('refresh')
   }
 }

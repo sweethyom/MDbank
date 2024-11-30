@@ -20,8 +20,8 @@ import { onMounted, ref } from 'vue';
 // const profileData= ref(null)
 const store = useMemberStore()
 const fetchProfileData =async()=>{
+  console.log('들어왔다.')
   await store.profile()
-  // profileData.value = store.profileData 
 }
 
 onMounted(()=>{

@@ -112,28 +112,24 @@ const logout = () => {
   }
   // 프로필
   const profileData=ref(null)
-  const profile= function(){
-
-    if(!token.value){
-      console.error('인증되지 않은 요청입니다.')
-      return
+  const profile = async function() {
+    if (!token.value) {
+      console.error('인증되지 않은 요청입니다.');
+      return;
     }
-    axios({
-      method: 'get',
-      url:`${API_URL}/accounts/profile/`,
-      headers:{
-        Authorization: `Token ${token.value}`
-      }
-    })
-    .then((res)=>{
-      // console.log(res.data)
-      profileData.value=res.data
-      console.log(profileData.value)
-    })
-    .catch((err)=>{
-      console.log('error is', err)
-    })
-  }
+    try {
+      const res = await axios({
+        method: 'get',
+        url: `${API_URL}/accounts/profile/`,
+        headers: {
+          Authorization: `Token ${token.value}`
+        }
+      });
+      profileData.value = res.data;  // 데이터 업데이트
+    } catch (err) {
+      console.error(err);
+    }
+  };
   // 회원탈퇴
   const signOut = function(){
     axios({
@@ -267,59 +263,55 @@ const logout = () => {
       console.log(err)
     })
   }
-
-  // 즐겨찾기 추가
-  const addFavorite = function(newFavorite){
-    axios({
-      method:'post',
-      url:`${API_URL}/banks/favorites/create/`,
-      headers:{
+// 즐겨찾기 추가
+const addFavorite = async function(newFavorite) {
+  try {
+    const res = await axios({
+      method: 'post',
+      url: `${API_URL}/banks/favorites/create/`,
+      headers: {
         Authorization: `Token ${token.value}`
       },
-      data:newFavorite
-    })
-    .then((res)=>{
-      console.log('즐겨찾기 추가 성공', res.data)
-    })
-    .catch((err)=>{
-      console.log(err)
-    })
+      data: newFavorite
+    });
+    console.log('즐겨찾기 추가 성공', res.data);
+  } catch (err) {
+    console.log(err);
   }
+}
 
-  // 즐겨 찾기 수정
-  const updateFavorite = function(favoriteId, updateFavorite){
-    axios({
-      method:'put',
-      url:`${API_URL}/banks/favorites/update/${favoriteId}/`,
-      headers:{
+// 즐겨 찾기 수정
+const updateFavorite = async function(favoriteId, updateFavorite) {
+  try {
+    const res = await axios({
+      method: 'put',
+      url: `${API_URL}/banks/favorites/update/${favoriteId}/`,
+      headers: {
         Authorization: `Token ${token.value}`
       },
-      data:updateFavorite
-    })
-    .then((res)=>{
-      console.log('즐겨찾기 수정 성공', res.data)
-    })
-    .catch((err)=>{
-      console.log(err)
-    })
+      data: updateFavorite
+    });
+    console.log('즐겨찾기 수정 성공', res.data);
+  } catch (err) {
+    console.log(err);
   }
+}
 
-  // 즐겨 찾기 삭제
-  const deleteFavorite = function(favoriteId){
-    axios({
-      method:'delete',
-      url:`${API_URL}/banks/favorites/delete/${favoriteId}/`,
-      headers:{
+// 즐겨 찾기 삭제
+const deleteFavorite = async function(favoriteId) {
+  try {
+    const res = await axios({
+      method: 'delete',
+      url: `${API_URL}/banks/favorites/delete/${favoriteId}/`,
+      headers: {
         Authorization: `Token ${token.value}`
       }
-    })
-    .then((res)=>{
-      console.log('즐겨찾기 삭제 성공', res.data)
-    })
-    .catch((err)=>{
-      console.log(err)
-    })
+    });
+    console.log('즐겨찾기 삭제 성공', res.data);
+  } catch (err) {
+    console.log(err);
   }
+}
 
   // const isLoading = ref(false)
   // // 회원 정보 수정
