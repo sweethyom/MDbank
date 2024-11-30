@@ -64,36 +64,41 @@
     <!-- 자산유형 확인 -->
     <div class="card h-100 asset-type-card">
       <div class="card-body d-flex flex-column">
-        <!-- 로그인된 경우 -->
-        <div v-if="memberStore.profileData">
-          <div class="asset-info">
-            <div class="asset-icon"> 
-              <div class="green-box">
-                <img :src="getAssetTypeImage" alt="자산 유형 이미지" class="asset-type-img">
-              </div>
-            </div>
-            <div class="asset-text">
-              <div v-if="memberStore.profileData?.asset_type">
-                <p class="mb-2">{{ memberStore.memberName }}님의 자산관리 유형은</p>
-                <h5 class="asset-type mb-3">{{ memberStore.profileData.asset_type.title }}</h5>
-                <p>입니다!</p>
-              </div>
-              <div v-else>
-                <p class="mb-3">{{ memberStore.memberName }}님</p>
-                <p>자산관리 유형을 분석해보세요</p>
-              </div>
-            </div>
-          </div>
-          <button @click="goToRecommend" class="recommend-button mt-auto">
-            추천 금융 상품 보러가기
-          </button>
-        </div>
-        
         <!-- 로그인되지 않은 경우 -->
-        <div v-else class="login-prompt text-center">
+        <div v-if="!memberStore.profileData" class="login-prompt text-center">
           <h6 class="mb-3">서비스 이용을 위해 로그인이 필요합니다</h6>
           <RouterLink :to="{name:'LoginView'}" class="btn btn-primary">로그인하기</RouterLink>
         </div>
+
+        <!-- 로그인된 경우 -->
+        <template v-else>
+           <!-- 자산유형이 있는 경우 -->
+           <div v-if="memberStore.profileData?.asset_type" class="asset-info">
+            <div class="text-center">
+              <div class="asset-icon mb-4"> 
+                <div class="green-box mx-auto">
+                  <img :src="getAssetTypeImage" alt="자산 유형 이미지" class="asset-type-img">
+                </div>
+              </div>
+              <p class="mb-2">{{ memberStore.memberName }}님의 자산관리 유형은</p>
+              <h5 class="asset-type mb-3">{{ memberStore.profileData.asset_type.title }}</h5>
+              <p>입니다!</p>
+            </div>
+          </div>
+
+          <!-- 자산유형이 없는 경우 -->
+          <div v-else class="asset-info" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="text-center" style="font-size: 25px; font-weight: bold;">
+              <p class="mb-3">{{ memberStore.memberName }}님</p>
+              <p>자산관리 유형을 분석해보시고, <br>추천 금융 상품을 확인해보세요!</p>
+            </div>
+          </div>
+    
+
+          <button @click="goToRecommend" class="recommend-button mt-auto">
+            추천 금융 상품 보러가기
+          </button>
+        </template>
       </div>
     </div>
   </div>

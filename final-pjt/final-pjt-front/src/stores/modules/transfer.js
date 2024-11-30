@@ -9,7 +9,7 @@ export const useTransferStore = defineStore('transfer', () => {
 
 
  
-  // localStorage.setItem('lastIsTuno', '0000800'); 
+  localStorage.setItem('lastIsTuno', '0000800'); 
   const savedIsTuno = localStorage.getItem('lastIsTuno');
   const lastIsTuno = ref(savedIsTuno ? savedIsTuno : '0000282');
 

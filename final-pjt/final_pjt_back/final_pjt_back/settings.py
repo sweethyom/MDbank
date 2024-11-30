@@ -48,6 +48,10 @@ REST_FRAMEWORK = {
 ]
 }
 
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.CustomAuthenticationBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 # Application definition
 
 INSTALLED_APPS = [

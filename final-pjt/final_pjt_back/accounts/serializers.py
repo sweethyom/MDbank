@@ -28,12 +28,13 @@ class CustomRegisterSerializer(RegisterSerializer):
             username=self.validated_data.get('username')
             if Member.objects.filter(username=username).exists():
                  raise serializers.ValidationError({"username":"이미 존재하는 아이디입니다."})
-            
+            # 기존계좌 여부 확인
             old_account_num = self.validated_data.get('old_account')
             old_account_instance = OldAccount.objects.filter(account_num=old_account_num).first()
             if not old_account_instance:
                 raise serializers.ValidationError({"old_account": "등록된 계좌가 아닙니다. 계좌 등록을 먼저 해주세요."})
-            # old_account_num = OldAccount.objects.get(account_num=self.validated_data.get('old_account'))  # get으로 해서 단일 객체로 반환해야함 (filter 하면 쿼리셋 객체 반환해서 ValueError남)
+            
+            
             if old_account_num:
                 user = super().save(request)  # 기본 사용자 저장 로직 실행
                 user.first_name = self.validated_data.get('first_name', '')
@@ -41,13 +42,13 @@ class CustomRegisterSerializer(RegisterSerializer):
                 user.address = self.validated_data.get('address', '')
                 user.address_detail = self.validated_data.get('address_detail', '')
                 user.tel = self.validated_data.get('tel', '')
-                user.old_account = self.validated_data.get('old_account', '')
+                user.old_account_pk = old_account_instance
                 user.old_account= old_account_num
                 user.save()  # 변경 사항 저장
 
                 # # OldAccount의 sign_in 을 ture로 바꾸기
-                old_account_num.sign_in = True
-                old_account_num.save()
+                old_account_instance.sign_in = True
+                old_account_instance.save()
 
                 return user
             else:
@@ -60,22 +61,28 @@ class MemberSerializers(serializers.ModelSerializer):
           fields = ['username', 'email', 'is_superuser', 'is_staff', 'first_name', 'last_name', 'address', 'tel', 'birth', 'old_account']
 
 
-# # 회원정보수정
-# class CustomChangeSerializer(UserDetailsSerializer):
-#     class Meta:
-#          model = Member
-#          fields = ['email', 'address', 'address_detail', 'tel']
-#     # email=serializers.EmailField(max_length=255)
-#     # address= serializers.CharField(required=True, max_length=200) 
-#     # address_detail= serializers.CharField(max_length=200)
-#     # tel= serializers.CharField(required=True,max_length=13)
+class OldAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OldAccount
+        fields = '__all__'
 
-#     # 추가 필드 저장
-#     def save(self, request):
-#         user = request.user
-#         user.email = self.validated_data.get('email', user.email)
-#         user.address = self.validated_data.get('address', user.address)
-#         user.address_detail = self.validated_data.get('address_detail', user.address_detail)
-#         user.tel = self.validated_data.get('tel', user.tel)
-#         user.save()  # 변경 사항 저장
-#         return user
+
+# 회원정보수정
+class CustomChangeSerializer(UserDetailsSerializer):
+    class Meta:
+         model = Member
+         fields = ['email', 'address', 'address_detail', 'tel']
+    # email=serializers.EmailField(max_length=255)
+    # address= serializers.CharField(required=True, max_length=200) 
+    # address_detail= serializers.CharField(max_length=200)
+    # tel= serializers.CharField(required=True,max_length=13)
+
+    # 추가 필드 저장
+    def save(self, request):
+        user = request.user
+        user.email = self.validated_data.get('email', user.email)
+        user.address = self.validated_data.get('address', user.address)
+        user.address_detail = self.validated_data.get('address_detail', user.address_detail)
+        user.tel = self.validated_data.get('tel', user.tel)
+        user.save()  # 변경 사항 저장
+        return user

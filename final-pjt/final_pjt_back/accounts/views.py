@@ -10,18 +10,42 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Member
 from products.models import Asset_type
 from banks.models import BankAccount, Favorites, Bank  
-from .serializers import MemberSerializers
+from .serializers import MemberSerializers, OldAccountSerializer
 from banks.serializers import BankAccountSerializers, FavoritesSerializers, BankSerializers
 from products.serializers import AssetTypeSerializer
 from django.http import JsonResponse 
 from rest_framework.views import APIView
-# from .serializers import CustomChangeSerializer
+from .serializers import CustomChangeSerializer
 
 
 from django.contrib.auth import authenticate
 # from django.contrib.auth.models import update_last_login
 
-# Create your views here.
+
+# 로그인 로직
+from dj_rest_auth.views import LoginView
+
+
+class CustomLoginView(LoginView):
+    def post(self, request, *args, **kwargs):
+        # 회원탈퇴 여부 확인
+        username = request.data.get('username')
+        try:
+            user = Member.objects.get(username=username)
+            if user.sign_out:
+                return Response(
+                    {"error": "탈퇴한 회원입니다. 재가입이 불가능합니다."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except Member.DoesNotExist:
+            pass
+
+        # 기존 로그인 로직 실행
+        response = super().post(request, *args, **kwargs)
+        return response
+
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])   
 def profile(request):
@@ -76,33 +100,37 @@ def signout(request):
     user= request.user
     # 해당하는 회원 찾기
     member = Member.objects.get(pk=user.id)
-    # 회원의 정보 수정
-    member.sign_out = True  # 값이 true로 안바뀜
+    old_account= member.old_account_pk
+    
+    member.sign_out = True
+    member.password = '0000'   # 회원탈퇴 시 비번 0000으로 수정  
     member.save()
-    # 토큰만 삭제하고 아이디는 남겨두는 방식으로 간다. 다시는 가입 못하게 
-    token = Token.objects.get(user=user)
-    token.delete()
+    old_account.sign_in = False
+    old_account.save()
+
+    # token = Token.objects.get(user=user)
+    # token.delete()
     
     return JsonResponse({"회원탈퇴":"성공"})
 
 
-# class UpdateProfileView(APIView):
-#     permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근 가능
+class UpdateProfileView(APIView):
+    permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근 가능
 
-#     def put(self, request):
-#         user = request.user  # 로그인된 사용자 정보
-#         serializer = CustomChangeSerializer(user, data=request.data, partial=True)
+    def put(self, request):
+        user = request.user  # 로그인된 사용자 정보
+        serializer = CustomChangeSerializer(user, data=request.data, partial=True)
 
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-#         return Response(serializer.errors, status=400)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
 
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
-    # def put(self, request, *args, **kwargs):
-    #     serializer = CustomChangeSerializer(data=request.data, instance=request.user)
-    #     if serializer.is_valid():
-    #         serializer.save(request)
-    #         return Response()
-    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def put(self, request, *args, **kwargs):
+        serializer = CustomChangeSerializer(data=request.data, instance=request.user)
+        if serializer.is_valid():
+            serializer.save(request)
+            return Response()
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -78,7 +78,9 @@
 import { useMemberStore } from '@/stores/modules/member';
 import axios from 'axios';
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const store = useMemberStore();
 
 // 반응형 변수 선언
@@ -131,32 +133,47 @@ const updateProfile = async () => {
     const payload = {
         email: email.value,
         address: address.value,
-        addressDetail: addressDetail.value,
+        address_detail: addressDetail.value,
         tel: tel.value,
     };
-    console.log(payload.email, payload.address, payload.addressDetail, payload.tel )
-    isLoading.value = true;
 
     try {
-        console.log('Authorization 헤더:', `Bearer ${token.value}`);
-        // PUT 요청으로 회원 정보 수정, Authorization 헤더에 토큰 추가
         const response = await axios.put(`${API_URL}/accounts/updateprofile/`, payload, {
             headers: {
-                'Authorization': `Bearer ${token.value}`,
-                'Content-Type': 'application/json',  // Bearer 토큰을 Authorization 헤더에 추가
+                'Authorization': `Token ${token.value}`,
+                'Content-Type': 'application/json',
             }
         });
-        console.log('Authorization 헤더:', `Bearer ${token.value}`);
-
-        // 성공 시 처리
         console.log('회원 정보 수정 성공', response.data);
+        await alert('회원 정보가 성공적으로 수정되었습니다.');
+        await router.push('/profile');
+
     } catch (err) {
-        // 실패 시 처리
-        console.error('회원 정보 수정 실패:', err.response ? err.response.data : err);
-        alert('회원 정보 수정에 실패했습니다. 다시 시도해 주세요.');
-    } finally {
-        // 로딩 상태 종료
-        isLoading.value = false;
+         // 더 자세한 에러 로깅
+         console.error('에러 상세 정보:', {
+            status: err.response?.status,
+            data: err.response?.data,
+            message: err.message
+        });
+
+        // 에러 상황별 다른 메시지 표시
+        if (err.response) {
+            if (err.response.status === 400) {
+                // 유효성 검사 실패 등의 에러
+                const errorMessage = Object.values(err.response.data).join('\n');
+                alert(`회원 정보 수정 실패:\n${errorMessage}`);
+            } else if (err.response.status === 401) {
+                alert('로그인이 필요합니다.');
+            } else {
+                alert('회원 정보 수정에 실패했습니다. 다시 시도해 주세요.');
+            }
+        } else if (err.request) {
+            // 요청은 보냈으나 응답을 받지 못한 경우
+            alert('서버와의 통신에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        } else {
+            // 요청 자체를 보내지 못한 경우
+            alert('요청 처리 중 오류가 발생했습니다.');
+        }
     }
 };
 </script>
