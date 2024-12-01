@@ -15,6 +15,9 @@ import TopScroll from './components/common/TopScroll.vue';
 </script>
 
 <style scoped>
-
-
+.container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
 </style>

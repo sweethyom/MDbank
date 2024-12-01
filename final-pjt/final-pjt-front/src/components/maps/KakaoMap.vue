@@ -83,7 +83,7 @@
 }
 
 .search-wrapper {
-  width: 300px;
+  width: 450px;
   background: white;
   padding: 1.5rem;
   border-radius: 15px;
@@ -123,7 +123,7 @@
 </style>
 <script setup>
 import { useMapStore } from '@/stores/modules/kakaomap';
-import { ref, onMounted, nextTick, watch, onBeforeMount } from 'vue';
+import { ref, onMounted, nextTick, watch, onBeforeMount, onActivated } from 'vue';
 import { useRoute } from 'vue-router';  // vue-router에서 useRoute 가져오기
 import KakaoMapSearch from '@/components/maps/KakaoMapSearch.vue';
 
@@ -152,4 +152,12 @@ onMounted(() => {
 //     }
 //   });
 // });
+
+onActivated(() => {
+  nextTick(() => {
+    if (mapContainer.value) {
+      store.loadKakaoMap(mapContainer.value);
+    }
+  });
+});
 </script>
