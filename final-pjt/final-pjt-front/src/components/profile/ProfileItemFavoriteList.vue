@@ -5,7 +5,9 @@
       <span class="divider">|</span>
       <span class="favorite-name">{{ favorites.recipient_name }}</span>
       <span class="divider">|</span>
-      <span class="favorite-account">{{ favorites.recipient }}</span>ㅓ
+      <span class="favorite-bank">{{ bankName }}</span>
+      <span class="divider">|</span>
+      <span class="favorite-account">{{ favorites.recipient }}</span>
     </div>
     <div class="favorite-actions">
       <button class="action-btn edit-btn" @click="toggleModal">
@@ -26,24 +28,24 @@
           <form @submit.prevent="updateFavorite">
             <div class="form-group">
               <label for="division">별명</label>
-              <input type="text" id="division" v-model="editFavorite.division" placeholder="별명을 입력하세요">
+              <input type="text" id="division" v-model="editFavorite.division" :placeholder="favorites.division">
             </div>
             <div class="form-group">
               <label for="bank">은행이름</label>
               <select id="bank" v-model="editFavorite.bank" class="form-select">
-                <option value="" disabled selected>은행을 선택하세요</option>
-                <option v-for="bank in profileData.banks" :key="bank.id" :value="bank.id">
+                <option value="" disabled selected>{{ bankName }}</option>
+                <option v-for="bank in profileData.banks" :key="bank.id" :value="bank.id" >
                   {{ bank.name }}
                 </option>
               </select>
             </div>
             <div class="form-group">
               <label for="recipient">계좌번호</label>
-              <input type="text" id="recipient" v-model="editFavorite.recipient" placeholder="계좌번호를 입력하세요">
+              <input type="text" id="recipient" v-model="editFavorite.recipient" :placeholder="favorites.recipient">
             </div>
             <div class="form-group">
               <label for="recipient-name">받는 분 이름</label>
-              <input type="text" id="recipient-name" v-model="editFavorite.recipient_name" placeholder="받는 분 이름을 입력하세요">
+              <input type="text" id="recipient-name" v-model="editFavorite.recipient_name" :placeholder="favorites.recipient_name">
             </div>
             <div class="modal-actions">
               <button type="submit" class="submit-button">
@@ -59,6 +61,57 @@
     </Teleport>
   </div>
 </template>
+
+<script setup>
+import { ref,computed } from 'vue';
+import { useMemberStore } from '@/stores/modules/member';
+const store = useMemberStore()
+
+const props = defineProps({
+  favorites: Object,
+  profileData: Object
+})
+
+const bankName = computed(()=>{
+  const bank = props.profileData.banks.find(bank=>bank.id === props.favorites.bank)
+  return bank? bank.name: ''
+})
+const emit = defineEmits(['refresh'])
+const showModal = ref(false)
+
+const editFavorite = ref({
+  division:'',
+  bank:'',
+  recipient:'',
+  recipient_name:''
+})
+
+const toggleModal = function(){
+  showModal.value = !showModal.value
+  if (!showModal.value){
+    editFavorite.value = {
+      division:'',
+      bank:'',
+      recipient:'',
+      recipient_name:'' 
+    }
+  }
+}
+
+const updateFavorite = async () => {
+  await store.updateFavorite(props.favorites.id, editFavorite.value)
+  toggleModal()
+  emit('refresh')
+}
+
+
+const deleteFavorite = async () => {
+  if(confirm('정말 삭제하시겠습니까?')) {
+    await store.deleteFavorite(props.favorites.id)
+    emit('refresh')
+  }
+}
+</script>
 
 <style scoped>
 .favorite-item {
@@ -96,7 +149,9 @@
 .favorite-name, .favorite-account {
   color: #666;
 }
-
+.favorite-bank{
+  color: #666;
+}
 .favorite-actions {
   display: flex;
   gap: 0.5rem;
@@ -245,49 +300,3 @@
   }
 }
 </style>
-<script setup>
-import { ref } from 'vue';
-import { useMemberStore } from '@/stores/modules/member';
-const store = useMemberStore()
-
-const props = defineProps({
-  favorites: Object,
-  profileData: Object
-})
-
-const emit = defineEmits(['refresh'])
-const showModal = ref(false)
-
-const editFavorite = ref({
-  division:'',
-  bank:'',
-  recipient:'',
-  recipient_name:''
-})
-
-const toggleModal = function(){
-  showModal.value = !showModal.value
-  if (!showModal.value){
-    editFavorite.value = {
-      division:'',
-      bank:'',
-      recipient:'',
-      recipient_name:'' 
-    }
-  }
-}
-
-const updateFavorite = async () => {
-  await store.updateFavorite(props.favorites.id, editFavorite.value)
-  toggleModal()
-  emit('refresh')
-}
-
-
-const deleteFavorite = async () => {
-  if(confirm('정말 삭제하시겠습니까?')) {
-    await store.deleteFavorite(props.favorites.id)
-    emit('refresh')
-  }
-}
-</script>

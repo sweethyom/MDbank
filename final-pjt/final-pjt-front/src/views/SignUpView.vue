@@ -74,6 +74,8 @@
 <script setup>
 import { useMemberStore } from '@/stores/modules/member';
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
 const store = useMemberStore()
 
@@ -89,21 +91,30 @@ const tel = ref(null)
 const oldAccount = ref(null)
 const birth = ref(null)
 
-const signup = function(){
-    const payload = {
-        // lastName:lastName.value,
-        firstName:firstName.value,
-        username:username.value,
-        password1:password1.value,
-        password2:password2.value,
-        email:email.value,
-        address:address.value,
-        addressDetail:addressDetail.value,
-        tel:tel.value,
-        oldAccount:oldAccount.value,
-        birth:birth.value,
+const signup = async function() {
+    try {
+        const payload = {
+            firstName: firstName.value,
+            username: username.value,
+            password1: password1.value,
+            password2: password2.value,
+            email: email.value,
+            address: address.value,
+            addressDetail: addressDetail.value,
+            tel: tel.value,
+            oldAccount: oldAccount.value,
+            birth: birth.value,
+        }
+        
+        await store.signup(payload)
+        await store.logIn({ username: username.value, password: password1.value })
+        await store.profile()
+        await store.getUserInfo()
+        router.push({ name: 'HomeView' })
+    } catch (error) {
+        console.error('회원가입 중 오류 발생:', error)
+        // 필요한 경우 사용자에게 에러 메시지 표시
     }
-    store.signup(payload)
 }
 
 

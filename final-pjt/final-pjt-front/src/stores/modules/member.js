@@ -41,75 +41,87 @@ const logout = () => {
 }
   
   // 회원가입
-  const signup=function(payload){
+  const signup = async function(payload) {
     // 변수명은 백엔드랑 동일해야함!!!
     // const last_name=payload.lastName
-    const first_name=payload.firstName
-    const username=payload.username  // 아이디
-    const password1=payload.password1
-    const password2=payload.password2
-    const email=payload.email
-    const address=payload.address
-    const address_detail=payload.addressDetail
-    const tel=payload.tel
-    const old_account=payload.oldAccount
-    const birth=payload.birth
+    const {
+      firstName: firstName,
+      username,
+      password1,
+      password2,
+      email,
+      address,
+      addressDetail: address_detail,
+      tel,
+      oldAccount: old_account,
+      birth
+    } = payload
   
-    axios({
-      method:'post',
-      url:`${API_URL}/accounts/signup/`,
-      data:{
-        // last_name, 
-        first_name, username, password1, password2, 
-        email, address, address_detail, tel, old_account,birth
-      }
-    })
-    .then(res=>{
-      console.log('회원가입 성공')
-      const password=password1
-      logIn({ username, password })
-      router.push({name:'HomeView'})
-    })
-    .catch(err=>{
-      console.log(err)
-      if(err.response &&  err.response.data) {
-        const errorData = err.response.data
-        if(errorData.username){
-          alert('이미 존재하는 아이디입니다.')
-          // alert(`${errorData.username}`)
+    try {
+      await axios({
+        method: 'post',
+        url: `${API_URL}/accounts/signup/`,
+        data: {
+          first_name:firstName,
+          username,
+          password1,
+          password2,
+          email,
+          address,
+          address_detail,
+          tel,
+          old_account,
+          birth
         }
-        if(errorData.old_account){
-          alert(`${errorData.old_account}`)
+      })
+  
+      console.log('회원가입 성공')
+      const password = password1
+      
+  
+    } catch (err) {
+      console.log(err)
+      if (err.response?.data) {
+        const errorData = err.response.data
+        if (errorData.username) {
+          alert('이미 존재하는 아이디입니다.')
+        }
+        if (errorData.old_account) {
+          alert(errorData.old_account)
+        }
       }
     }
-    })
   }
   // 로그인
-  const logIn = function(payload){
-    
-    const username =payload.username
-    const password =payload.password
+  const logIn = async function(payload) {
+    try {
+        const username = payload.username
+        const password = payload.password
 
-    axios({
-      method: 'post',
-      url:`${API_URL}/accounts/login/`,
-      data:{
-        username, password
-      }
-    })
-    .then((res)=>{
-      token.value = res.data.key
-      localStorage.setItem('authToken', token.value)
-      console.log('로그인 성공')
-      console.log(res.data)
-      getUserInfo()
-      router.push({name:'HomeView'})
-    })
-    .catch((err)=>{
-      console.log(err)
-      alert('아이디와 비밀번호를 다시 확인해주세요.')
-    })
+        const res = await axios({
+            method: 'post',
+            url: `${API_URL}/accounts/login/`,
+            data: {
+                username, password
+            }
+        })
+
+        token.value = res.data.key
+        localStorage.setItem('authToken', token.value)
+        console.log('로그인 성공')
+        console.log(res.data)
+        
+        // 순차적으로 사용자 정보와 프로필 데이터를 가져옴
+        
+        return true // 로그인 성공 시 true 반환
+        
+    } catch (error) {
+        console.error('로그인 실패:', error)
+        throw error // 에러를 상위로 전파하여 컴포넌트에서 처리할 수 있도록 함
+    }
   }
+
+
   // 프로필
   const profileData=ref(null)
   const profile = async function() {
@@ -126,29 +138,41 @@ const logout = () => {
         }
       });
       profileData.value = res.data;  // 데이터 업데이트
+      console.log('프로필 데이터', profileData.value) // 디버깅용 로그  
     } catch (err) {
       console.error(err);
     }
   };
   // 회원탈퇴
-  const signOut = function(){
-    axios({
-      method:'post',
-      url:`${API_URL}/accounts/signout/`,
-      headers:{
-        Authorization:`Token ${token.value}`
-      }
-    })
-    .then((res)=>{
+  const signOut = async function() {
+    try {
+      await axios({
+        method: 'post',
+        url: `${API_URL}/accounts/signout/`,
+        headers: {
+          Authorization: `Token ${token.value}`
+        }
+      })
+      
       console.log('회원탈퇴 됐습니다')
-      logout() // 회원탈퇴 후 로그아웃 처리
-      router.push({name:'LoginView'}) //로그인페이지로 리디렉션
-    })
-    .catch((err)=>{
-      console.log(err)
-    })
-  }   
-
+      alert('회원탈퇴 됐습니다')
+      await logout() // 회원탈퇴 후 로그아웃 처리
+      router.push({ name: 'LoginView' }) //로그인페이지로 리디렉션
+      
+    } catch (err) {
+      console.error('회원탈퇴 실패:', err)
+      if (err.response) {
+        // 서버에서 응답이 왔지만 에러인 경우
+        alert(err.response.data.message || '회원탈퇴에 실패했습니다.')
+      } else if (err.request) {
+        // 요청은 보냈지만 응답을 받지 못한 경우
+        alert('서버와의 통신에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      } else {
+        // 요청 자체를 보내지 못한 경우
+        alert('회원탈퇴 처리 중 오류가 발생했습니다.')
+      }
+    }
+  }
     //자산관리유형검사
     const myType=ref(null)
     const assetType=function(){
@@ -314,26 +338,36 @@ const deleteFavorite = async function(favoriteId) {
   }
 }
 
-  // const isLoading = ref(false)
-  // // 회원 정보 수정
-  // const updateProfile = async (payload) => {
-  //   isLoading.value = true;  // 로딩 상태를 true로 설정
-  
-  //   try {
-  //     // axios를 통한 PUT 요청, payload는 요청의 데이터로 사용
-  //     const response = await axios.put(`${API_URL}/accounts/updateprofile/`, payload);
-  
-  //     // 응답을 받으면 로그를 출력
-  //     console.log('회원 정보 수정 성공', response.data);
-  //   } catch (err) {
-  //     // 오류 처리
-  //     console.error('회원 정보 수정 실패:', err.response ? err.response.data : err);
-  //     alert('회원 정보 수정에 실패했습니다. 다시 시도해 주세요.');
-  //   } finally {
-  //     // 로딩 상태 종료
-  //     isLoading.value = false;
-  //   }
-  // };
+
+
+// const isLoading = ref(false)
+// // 회원 정보 수정
+// const updateProfile = async (payload) => {
+//   isLoading.value = true;  // 로딩 상태를 true로 설정
+
+//   try {
+//     const response = await axios({
+//       method: 'put',
+//       url: `${API_URL}/accounts/updateprofile/`,
+//       headers: {
+//         Authorization: `Token ${token.value}`,
+//         // 'Content-Type': 'application/json'
+//       },
+//       data: payload
+//     });
+
+//     // 응답을 받으면 로그를 출력
+//     console.log('회원 정보 수정 성공', response.data);
+//     return response.data;  // 성공 시 데이터 반환
+//   } catch (err) {
+//     // 오류 처리
+//     console.error('회원 정보 수정 실패:', err.response ? err.response.data : err);
+//     throw err;  // 에러를 상위로 전파하여 컴포넌트에서 처리할 수 있도록 함
+//   } finally {
+//     // 로딩 상태 종료
+//     isLoading.value = false;
+//   }
+// }
   
     // 은행선택 목록 조회
     const banks = ref([]); // 은행 목록을 저장
