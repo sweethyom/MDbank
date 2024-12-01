@@ -578,6 +578,7 @@ def recommend(request):
         max_interest = product.rates.aggregate(Max('intr_rate'))['intr_rate__max'] or 0
         max_period = product.rates.aggregate(Max('save_trm'))['save_trm__max'] or 0
         
+        products_str += f"상품코드: {product.pk}\n"
         products_str += f"상품명: {product.fin_prdt_nm}\n"
         products_str += f"상품 설명: {product.etc_note}\n"
         products_str += f"상품 타입: {product.type}\n"
@@ -605,18 +606,14 @@ def recommend(request):
     {{
         "recommendations": [
             {{
+                "pk: "상품코드",
                 "product_name": "상품명",
                 "explanation": "추천 이유 설명",
                 "max_interest": "최대 금리",
                 "max_period": "최대 가입기간"
             }},
             {{
-                "product_name": "상품명",
-                "explanation": "추천 이유 설명",
-                "max_interest": "최대 금리",
-                "max_period": "최대 가입기간"
-            }},
-            {{
+                "pk: "상품코드",
                 "product_name": "상품명",
                 "explanation": "추천 이유 설명",
                 "max_interest": "최대 금리",

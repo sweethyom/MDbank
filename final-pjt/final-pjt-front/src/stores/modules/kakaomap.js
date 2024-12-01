@@ -70,7 +70,6 @@ export const useMapStore = defineStore('kakaomap', () => {
       } else {
         console.log('지도가 이미 초기화되었습니다.');
       }
-      return;
     }
 
     const script = document.createElement('script');
@@ -152,7 +151,7 @@ export const useMapStore = defineStore('kakaomap', () => {
 
     ps.keywordSearch(keyword.value, (data, status) => {
       if (status === kakao.maps.services.Status.OK) {
-        places.value = [...data.slice(0, 3)]; // 상위 3개만 선택
+        places.value = [...data]; // 상위 3개만 선택
         isSearched.value = true;
 
         places.value.forEach((place) => {

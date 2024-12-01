@@ -207,11 +207,11 @@ onMounted(async () => {
 
 <style scoped>
 /* 헤더 스타일 */
-.container {
+/* .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 2rem;
-}
+} */
 
 .page-header {
   width: 100%;
