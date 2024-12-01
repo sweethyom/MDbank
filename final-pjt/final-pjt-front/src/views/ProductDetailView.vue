@@ -119,6 +119,14 @@ import { useProductStore } from '@/stores/modules/product';
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
+// props로 id 받기
+const props = defineProps({
+  id: {
+    type: String,
+    required: true
+  }
+});
+
 const product = ref({})
 const route = useRoute()
 const store = useProductStore()
@@ -142,6 +150,7 @@ onMounted(async () => {
         console.error('데이터 로드 중 오류:', error);
     }
 });
+
 
 </script>
 

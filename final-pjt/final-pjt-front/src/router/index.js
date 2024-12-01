@@ -65,7 +65,6 @@ const router = createRouter({
       component: KakaoMapView,
     },
     {
-
       path: '/product/:id',  // :id는 동적 파라미터
       name: 'ProductDetailView',
       component: ProductDetailView,

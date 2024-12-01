@@ -170,6 +170,7 @@ const logout = () => {
 
   // 금융상품 추천
   const recommendData=ref(null)
+  
   const recommend=function(){
     
     if (!myType.value) {

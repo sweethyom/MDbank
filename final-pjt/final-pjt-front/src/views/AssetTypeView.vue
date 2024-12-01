@@ -85,11 +85,12 @@
                         :key="index"
                     >
                         <div class="recommendation-card">
-                            
-                            <h4>{{ recommendation.product_name }}</h4>   
-                            <p>{{ recommendation.explanation }}</p>
-                            <p>최대 금리: {{ recommendation.max_interest }}</p>
-                            <p>최대 가입기간: {{ recommendation.max_period }}</p>
+                            <RouterLink :to="{name: 'ProductDetailView', params: { id: recommendation.pk }}" >
+                                <h4>{{ recommendation.product_name }}</h4>   
+                                <p>{{ recommendation.explanation }}</p>
+                                <p>최대 금리: {{ recommendation.max_interest }}</p>
+                                <p>최대 가입기간: {{ recommendation.max_period }}</p>
+                            </RouterLink>
                         </div>
                     </div>
                 </div>
@@ -114,6 +115,8 @@ import {
     Legend,
     ArcElement
 } from 'chart.js';
+import { RouterLink } from 'vue-router';
+
 // Chart.js 컴포넌트 등록
 ChartJS.register(
     CategoryScale,
