@@ -230,14 +230,16 @@ def exchange_rate(request):
     today = datetime.now()
 
     # 월요일이거나 주말인 경우, 금요일로 날짜를 조정
-    if today.weekday() == 0:  # 월요일 오전 9시 이전
+    if today.weekday() == 0 and today.hour < 12:  # 월요일 오전 9시 이전
         today = today - timedelta(days=3)  # 금요일로 변경
     elif today.weekday() >= 5:  # 주말인 경우
         today = today - timedelta(days=today.weekday() - 4)  # 금요일로 변경
+    else:
+        today = today
 
     # 날짜를 'YYYYMMDD' 형식으로 변환
     today = today.strftime('%Y%m%d')
-
+    print(today)
     # API 키 확인
     api_key = settings.EXCHANGE_API_KEY
     url = f'https://www.koreaexim.go.kr/site/program/financial/exchangeJSON?authkey={api_key}&searchdate={today}&data=AP01'
@@ -262,11 +264,11 @@ def exchange_rate(request):
     
     # 통화 코드에 맞는 데이터를 찾기
     filtered_data = next(
-        (data for data in response if data['cur_unit'] == cur_unit and 'ttb' in data and data['ttb']),
+        (data for data in response if data['cur_unit'] == cur_unit and 'deal_bas_r' in data and data['deal_bas_r']),
         None
     )
     if filtered_data:
-        return JsonResponse({'exchange_data': filtered_data['ttb']}, safe=False)
+        return JsonResponse({'exchange_data': filtered_data['deal_bas_r']}, safe=False)
     else:
         return JsonResponse({'error': 'Currency not found'}, status=404)
 
@@ -288,55 +290,72 @@ def fetch_exchange_rates(url):
         return None
     
 def save_exchange_rates():
-    api_key = settings.EXCHANGE_API_KEY
-    today = datetime.now()
-    dates = [
-    (today - timedelta(days=i)).strftime('%Y%m%d') 
-    for i in range(1, 31)  # 1일~30일 전까지
-    if (today - timedelta(days=i)).weekday() < 5  # 월(0) ~ 금(4)만 포함
-    ]
-    for date in dates:
-        url = f'https://www.koreaexim.go.kr/site/program/financial/exchangeJSON?authkey={api_key}&searchdate={date}&data=AP01'
-        data = fetch_exchange_rates(url)
-            # API 호출 결과가 있는 경우 처리
-        if data:
-            for record in data:
-                # 환율 데이터를 데이터베이스에 저장
-                serializer = ExchangeRateSerializer(data={
-                    'date':date,
-                    'cur_unit': record.get('cur_unit'),
-                    'ttb': record.get('ttb'),
-                    'tts': record.get('tts'),
-                    'deal_bas_r':record.get('deal_bas_r'),
-                    'bkpr': record.get('bkpr'),
-                    'yy_efee_r': record.get('yy_efee_r'),
-                    'ten_dd_efee_r': record.get('ten_dd_efee_r'),
-                    'kftc_bkpr': record.get('kftc_bkpr'),
-                    'kftc_deal_bas_r': record.get('kftc_deal_bas_r'),
-                    'cur_nm': record.get('cur_nm'),
-                })
-                if not serializer.is_valid():
-                    # 유효하지 않으면 오류 메시지 출력
-                    print(f"유효하지 않은 데이터: 날짜={date}, 오류={serializer.errors}")
-                    continue  # 오류가 발생하면 다음 데이터로 넘어감
+    try:
+        api_key = settings.EXCHANGE_API_KEY
+        today = datetime.now()
+        
+        # 기존 데이터 모두 삭제
+        ExchangeRate.objects.all().delete()
+        print("기존 환율 데이터 삭제 완료")
 
-                serializer.save()
-                print(f"저장됨: 날짜={date}, 통화={record.get('cur_unit')}, 환율={record.get('deal_bas_r')}")
-        else:
-            print(f"데이터 없음: 날짜={date}")
-    return Response({"message": "환율 데이터가 저장되었습니다."}, status=status.HTTP_200_OK)  
+        # 최근 30일간의 평일 데이터만 가져오기
+        dates = [
+            (today - timedelta(days=i)).strftime('%Y%m%d') 
+            for i in range(0, 31)  # 오늘부터 30일 전까지
+            if (today - timedelta(days=i)).weekday() < 5  # 평일만
+        ]
+        
+        saved_count = 0
+        for date in dates:
+            url = f'https://www.koreaexim.go.kr/site/program/financial/exchangeJSON?authkey={api_key}&searchdate={date}&data=AP01'
+            data = fetch_exchange_rates(url)
+            
+            if data:
+                for record in data:
+                    try:
+                        serializer = ExchangeRateSerializer(data={
+                            'date': date,
+                            'cur_unit': record.get('cur_unit'),
+                            'ttb': record.get('ttb'),
+                            'tts': record.get('tts'),
+                            'deal_bas_r': record.get('deal_bas_r'),
+                            'bkpr': record.get('bkpr'),
+                            'yy_efee_r': record.get('yy_efee_r'),
+                            'ten_dd_efee_r': record.get('ten_dd_efee_r'),
+                            'kftc_bkpr': record.get('kftc_bkpr'),
+                            'kftc_deal_bas_r': record.get('kftc_deal_bas_r'),
+                            'cur_nm': record.get('cur_nm'),
+                        })
+                        
+                        if serializer.is_valid():
+                            serializer.save()
+                            saved_count += 1
+                            print(f"저장 완료: 날짜={date}, 통화={record.get('cur_unit')}")
+                        else:
+                            print(f"유효성 검사 실패: {serializer.errors}")
+                            
+                    except Exception as e:
+                        print(f"데이터 저장 중 오류: {str(e)}")
+                        continue
+            else:
+                print(f"데이터 없음: {date}")
+
+        print(f"총 {saved_count}개의 환율 데이터 저장 완료")
+        return True
+        
+    except Exception as e:
+        print(f"save_exchange_rates 오류: {str(e)}")
+        raise e
 
 import pandas as pd
 from .serializers import ExchangeRateSerializer
 from .models import ExchangeRate
 def load_exchange_rates():
-    print('로딩레쓰고')
     queryset = ExchangeRate.objects.all()
-    print('환율모델 싹가져와:', queryset)
-    
+
     # 데이터 직렬화
     serializer = ExchangeRateSerializer(queryset, many=True)
-    print('씨리얼라이저만들었써')
+
     
     # DataFrame 생성
     df = pd.DataFrame(serializer.data)
@@ -358,8 +377,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import io
 def plot_histogram(cur_unit, bins=20):
-    print('히스토그램그리러왔음', cur_unit)
-    
+
     # 환율 데이터를 로드
     df = load_exchange_rates()
     
@@ -405,9 +423,31 @@ def request_currency(request):
     if not cur_unit:
         return Response({"error": "통화명을 전달해 주세요."}, status=status.HTTP_400_BAD_REQUEST)
     
-    # 환율 데이터가 없는 경우 자동으로 저장
-    if not ExchangeRate.objects.exists():
-        save_exchange_rates()
+        
+    # 가장 최근 데이터의 날짜 확인
+    latest_date = ExchangeRate.objects.order_by('-date').first()
+    print('최근 데이터 날짜:', latest_date.date if latest_date else 'None')  # 디버깅용
+    
+    try:
+        if latest_date:
+            latest_date_obj = datetime.strptime(latest_date.date, '%Y%m%d').date()
+            today = datetime.now().date()
+            print(f'날짜 비교: latest={latest_date_obj}, today={today}')  # 디버깅용
+            
+            if latest_date_obj < today:
+                print('데이터 업데이트 시작')  # 디버깅용
+                save_exchange_rates()
+                print('데이터 업데이트 완료')  # 디버깅용
+        else:
+            print('첫 데이터 저장 시작')  # 디버깅용
+            save_exchange_rates()
+            print('첫 데이터 저장 완료')  # 디버깅용
+            
+    except Exception as e:
+        print(f'데이터 저장 중 오류 발생: {str(e)}')  # 디버깅용
+        return Response({"error": "데이터 업데이트 중 오류가 발생했습니다."}, 
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     # 히스토그램을 그립니다
     histogram_image = plot_histogram(cur_unit, bins=20)
@@ -419,6 +459,7 @@ def request_currency(request):
     encoded_image = base64.b64encode(histogram_image.getvalue()).decode('utf-8')
 
     return Response({"histogram": encoded_image}, status=status.HTTP_200_OK)
+
 
 
 
